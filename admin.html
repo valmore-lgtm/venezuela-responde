@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Venezuela Responde — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#000;--s1:#111;--s2:#1a1a1a;--s3:#222;
+  --border:#2a2a2a;--border2:#333;
+  --white:#fff;--dim:#777;--faint:#333;
+  --red:#e63025;--green:#22c55e;--amber:#f59e0b;--blue:#3b82f6;
+  --font:'Arial Black','Helvetica Neue',Arial,sans-serif;
+  --body:Arial,sans-serif
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--white);font-family:var(--body);font-size:14px}
+
+/* LOGIN */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{width:100%;max-width:360px;text-align:center}
+.login-flag{font-size:48px;margin-bottom:16px}
+.login-title{font-family:var(--font);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.login-sub{font-size:12px;color:var(--dim);letter-spacing:.5px;margin-bottom:32px}
+.login-input{width:100%;background:var(--s1);border:1px solid var(--border2);color:var(--white);border-radius:4px;padding:14px 16px;font-size:16px;font-family:var(--body);outline:none;text-align:center;letter-spacing:4px;margin-bottom:12px}
+.login-input:focus{border-color:var(--white)}
+.login-btn{width:100%;padding:14px;background:var(--white);color:var(--bg);border:none;border-radius:4px;font-size:14px;font-weight:900;font-family:var(--font);text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:.15s}
+.login-btn:active{transform:scale(.97)}
+.login-err{font-size:11px;color:var(--red);margin-top:10px;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:none}
+
+/* SHELL */
+.shell{display:none;flex-direction:column;min-height:100vh}
+.shell.on{display:flex}
+
+/* TOPBAR */
+.topbar{background:var(--bg);border-bottom:1px solid var(--border2);padding:12px 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:100}
+.tb-logo{font-family:var(--font);font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;flex:1}
+.tb-logo small{display:block;font-size:9px;font-weight:400;color:var(--dim);font-family:var(--body);text-transform:none;letter-spacing:0;margin-top:1px}
+.tb-badge{font-size:11px;padding:4px 10px;border-radius:2px;background:#e6302520;color:var(--red);border:1px solid #e6302540;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.sync-wrap{display:flex;align-items:center;gap:6px}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.sdot.on{background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.stxt{font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:1px;font-family:var(--font)}
+.tb-logout{font-size:11px;padding:6px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--dim);cursor:pointer;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.5px;transition:.15s}
+.tb-logout:hover{color:var(--red);border-color:var(--red)}
+
+/* STATS BAR */
+.stats-bar{display:flex;gap:0;border-bottom:1px solid var(--border2);flex-shrink:0}
+.stat-box{flex:1;padding:14px 20px;border-right:1px solid var(--border2);text-align:center}
+.stat-box:last-child{border-right:none}
+.stat-num{font-family:var(--font);font-size:28px;font-weight:900;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;border-right:1px solid var(--border2);flex-shrink:0;padding:16px 0}
+.sidebar-section{font-size:10px;color:var(--faint);font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:8px 20px 6px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--dim);transition:.15s;border-left:3px solid transparent;font-weight:600}
+.sidebar-item:hover{color:var(--white);background:var(--s1)}
+.sidebar-item.on{color:var(--white);border-left-color:var(--white);background:var(--s1)}
+.sidebar-item .si-count{margin-left:auto;font-size:11px;font-family:var(--font);font-weight:900;background:var(--red);color:#fff;border-radius:2px;padding:1px 5px;display:none}
+.sidebar-item .si-count.on{display:block}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* PANEL */
+.panel{display:none}
+.panel.on{display:block}
+.panel-title{font-family:var(--font);font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.panel-sub{font-size:11px;color:var(--dim);margin-left:auto;font-family:var(--body);font-weight:400;text-transform:none;letter-spacing:0}
+
+/* SEARCH */
+.search-row{display:flex;gap:10px;margin-bottom:16px}
+.admin-search{flex:1;background:var(--s1);border:1px solid var(--border2);color:var(--white);border-radius:4px;padding:10px 14px;font-size:14px;font-family:var(--body);outline:none}
+.admin-search:focus{border-color:var(--white)}
+.admin-search::placeholder{color:var(--faint)}
+
+/* FILTER PILLS */
+.filter-pills{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.fpill{padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700;border:1px solid var(--border2);background:transparent;color:var(--dim);cursor:pointer;transition:.15s;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px}
+.fpill:hover{color:var(--white)}
+.fpill.on{background:var(--white);border-color:var(--white);color:var(--bg)}
+
+/* USER TABLE */
+.table-wrap{background:var(--s1);border:1px solid var(--border2);border-radius:4px;overflow:hidden}
+.table-header{display:grid;grid-template-columns:1fr 80px 80px 90px 120px 160px;gap:0;border-bottom:1px solid var(--border2);padding:10px 16px;background:var(--s2)}
+.th{font-size:10px;color:var(--dim);font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.user-row{display:grid;grid-template-columns:1fr 80px 80px 90px 120px 160px;gap:0;padding:14px 16px;border-bottom:1px solid var(--border);align-items:center;transition:.15s}
+.user-row:last-child{border-bottom:none}
+.user-row:hover{background:var(--s2)}
+.user-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+.user-badge{font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.badge-verified{background:#22c55e20;color:var(--green);border:1px solid #22c55e40}
+.badge-banned{background:#e6302520;color:var(--red);border:1px solid #e6302540}
+.badge-pending{background:#f59e0b20;color:var(--amber);border:1px solid #f59e0b40}
+.user-stat{font-size:13px;color:#bbb;text-align:center}
+.user-time{font-size:11px;color:var(--dim)}
+.user-actions{display:flex;gap:6px;justify-content:flex-end}
+.act-btn{padding:6px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);text-transform:uppercase;letter-spacing:.3px;transition:.15s;white-space:nowrap}
+.act-btn:hover{transform:scale(.96)}
+.btn-verify{color:var(--green);border-color:#22c55e50}
+.btn-verify:hover{background:#22c55e15}
+.btn-ban{color:var(--red);border-color:#e6302550}
+.btn-ban:hover{background:#e6302515}
+.btn-unban{color:var(--amber);border-color:#f59e0b50}
+.btn-unban:hover{background:#f59e0b15}
+.btn-view{color:var(--white);border-color:var(--border2)}
+.btn-view:hover{background:var(--s3)}
+
+/* REPORTS TABLE */
+.rep-table{background:var(--s1);border:1px solid var(--border2);border-radius:4px;overflow:hidden}
+.rep-header{display:grid;grid-template-columns:50px 100px 1fr 120px 90px 80px 130px;gap:0;border-bottom:1px solid var(--border2);padding:10px 16px;background:var(--s2)}
+.rep-row{display:grid;grid-template-columns:50px 100px 1fr 120px 90px 80px 130px;gap:0;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;transition:.15s}
+.rep-row:last-child{border-bottom:none}
+.rep-row:hover{background:var(--s2)}
+.rep-cat{font-size:20px;text-align:center}
+.rep-type{font-size:11px;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#bbb}
+.rep-loc{font-size:13px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:16px}
+.rep-reporter{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.rep-urg{font-size:10px;padding:2px 7px;border-radius:2px;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.urg-red{background:var(--red);color:#fff}
+.urg-amb{background:var(--amber);color:#000}
+.urg-dim{background:var(--s3);color:var(--dim);border:1px solid var(--border)}
+.rep-time{font-size:11px;color:var(--dim)}
+.rep-actions{display:flex;gap:4px;justify-content:flex-end}
+.rbt{padding:5px 9px;border-radius:4px;border:1px solid var(--border2);background:transparent;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);text-transform:uppercase;letter-spacing:.3px;transition:.15s;color:var(--dim)}
+.rbt:hover{color:var(--white)}
+.rbt.del{color:var(--red);border-color:#e6302540}
+
+/* DETAIL MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.on{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:4px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:12px}
+.modal-head-title{font-family:var(--font);font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:.5px;flex:1}
+.modal-close{cursor:pointer;color:var(--dim);font-size:20px;line-height:1;background:none;border:none;color:var(--dim)}
+.modal-close:hover{color:var(--white)}
+.modal-body{padding:20px 24px}
+.modal-section{margin-bottom:20px}
+.modal-section-title{font-size:10px;color:var(--dim);font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.modal-row{display:flex;gap:10px;margin-bottom:8px;font-size:13px}
+.modal-row b{color:var(--dim);width:90px;flex-shrink:0;font-size:10px;padding-top:2px;text-transform:uppercase;letter-spacing:.5px;font-family:var(--font);font-weight:700}
+.modal-row span{color:#ddd;line-height:1.6;flex:1}
+.modal-actions{display:flex;gap:8px;padding:0 24px 20px;flex-wrap:wrap}
+.modal-act{flex:1;padding:12px;border-radius:4px;border:1px solid var(--border2);font-size:12px;font-weight:900;cursor:pointer;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px;background:transparent;color:var(--white);transition:.15s;text-align:center;white-space:nowrap}
+.modal-act:active{transform:scale(.97)}
+.modal-act.ok{background:var(--green);border-color:var(--green);color:#000}
+.modal-act.red{background:var(--red);border-color:var(--red)}
+.modal-act.amber{background:var(--amber);border-color:var(--amber);color:#000}
+.modal-act.del{color:var(--red);border-color:var(--red)}
+
+/* REPORT MINI CARD (in user modal) */
+.mini-rep{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;font-size:12px}
+.mini-rep-emoji{font-size:18px;flex-shrink:0}
+.mini-rep-info{flex:1;min-width:0}
+.mini-rep-loc{color:var(--white);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-rep-meta{color:var(--dim);font-size:10px;margin-top:2px}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:60px 20px;color:var(--faint)}
+.empty-emoji{font-size:36px;margin-bottom:12px}
+.empty-txt{font-size:12px;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px;font-weight:700;line-height:1.6}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--border2);border-radius:4px;padding:12px 20px;font-size:13px;font-weight:700;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .table-header,.user-row{grid-template-columns:1fr 70px 80px 100px}
+  .table-header .th:nth-child(n+5),.user-row>*:nth-child(n+5){display:none}
+  .rep-header,.rep-row{grid-template-columns:40px 90px 1fr 70px 110px}
+  .rep-header .th:nth-child(n+6),.rep-row>*:nth-child(n+6){display:none}
+  .sidebar{display:none}
+  .stats-bar{overflow-x:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="login-screen">
+  <div class="login-box">
+    <div class="login-flag">🇻🇪</div>
+    <div class="login-title">Venezuela Responde</div>
+    <div class="login-sub">Panel de administración — Blitz Foundation</div>
+    <input type="password" class="login-input" id="pwd-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')tryLogin()"/>
+    <button class="login-btn" onclick="tryLogin()">ENTRAR</button>
+    <div class="login-err" id="login-err">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell" id="shell">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">🇻🇪 Venezuela Responde<small>Panel de administración — Blitz Foundation</small></div>
+    <div class="tb-badge" id="tb-urgentes">0 urgentes</div>
+    <div class="sync-wrap"><div class="sdot" id="sdot"></div><div class="stxt" id="stxt">—</div></div>
+    <button class="tb-logout" onclick="logout()">Salir</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-box"><div class="stat-num" id="st-users" style="color:var(--blue)">0</div><div class="stat-lbl">Usuarios</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-verified" style="color:var(--green)">0</div><div class="stat-lbl">Verificados</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-banned" style="color:var(--red)">0</div><div class="stat-lbl">Baneados</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-reports" style="color:var(--amber)">0</div><div class="stat-lbl">Reportes activos</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-sos" style="color:var(--red)">0</div><div class="stat-lbl">SOS activos</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-done" style="color:var(--green)">0</div><div class="stat-lbl">Atendidos</div></div>
+  </div>
+
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">Gestión</div>
+      <div class="sidebar-item on" id="si-users" onclick="showPanel('users')">
+        👥 Usuarios
+        <span class="si-count" id="si-pending-count">0</span>
+      </div>
+      <div class="sidebar-item" id="si-reports" onclick="showPanel('reports')">
+        📋 Reportes
+        <span class="si-count on" id="si-rep-count">0</span>
+      </div>
+      <div class="sidebar-section">Filtros rápidos</div>
+      <div class="sidebar-item" onclick="showPanel('users');setTimeout(()=>setUserFlt('pending'),100)">⏳ Pendientes</div>
+      <div class="sidebar-item" onclick="showPanel('users');setTimeout(()=>setUserFlt('banned'),100)">🚫 Baneados</div>
+      <div class="sidebar-item" onclick="showPanel('reports');setTimeout(()=>setRepFlt('urgent'),100)">🔴 Urgentes</div>
+      <div class="sidebar-item" onclick="showPanel('reports');setTimeout(()=>setRepFlt('sos'),100)">🆘 SOS</div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- USERS PANEL -->
+      <div class="panel on" id="panel-users">
+        <div class="panel-title">
+          👥 Usuarios
+          <span class="panel-sub" id="user-count-lbl">0 usuarios</span>
+        </div>
+        <div class="search-row">
+          <input type="text" class="admin-search" id="user-search" placeholder="Buscar por nombre…" oninput="renderUsers()"/>
+        </div>
+        <div class="filter-pills">
+          <button class="fpill on" data-f="all" onclick="setUserFlt('all')">Todos</button>
+          <button class="fpill" data-f="pending" onclick="setUserFlt('pending')">⏳ Pendientes</button>
+          <button class="fpill" data-f="verified" onclick="setUserFlt('verified')">✅ Verificados</button>
+          <button class="fpill" data-f="banned" onclick="setUserFlt('banned')">🚫 Baneados</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <div class="th">Nombre</div>
+            <div class="th" style="text-align:center">Reportes</div>
+            <div class="th" style="text-align:center">Atendidos</div>
+            <div class="th">Estado</div>
+            <div class="th">Última actividad</div>
+            <div class="th" style="text-align:right">Acciones</div>
+          </div>
+          <div id="users-list"></div>
+        </div>
+      </div>
+
+      <!-- REPORTS PANEL -->
+      <div class="panel" id="panel-reports">
+        <div class="panel-title">
+          📋 Reportes
+          <span class="panel-sub" id="rep-count-lbl">0 reportes</span>
+        </div>
+        <div class="search-row">
+          <input type="text" class="admin-search" id="rep-search" placeholder="Buscar por lugar, descripción, usuario…" oninput="renderReports()"/>
+        </div>
+        <div class="filter-pills">
+          <button class="fpill on" data-rf="all" onclick="setRepFlt('all')">Todos</button>
+          <button class="fpill" data-rf="urgent" onclick="setRepFlt('urgent')">🔴 Urgente</button>
+          <button class="fpill" data-rf="sos" onclick="setRepFlt('sos')">🆘 SOS</button>
+          <button class="fpill" data-rf="active" onclick="setRepFlt('active')">⚡ Activos</button>
+          <button class="fpill" data-rf="done" onclick="setRepFlt('done')">✅ Atendidos</button>
+          <button class="fpill" data-rf="flagged" onclick="setRepFlt('flagged')">⚑ Marcados</button>
+        </div>
+        <div class="rep-table">
+          <div class="rep-header">
+            <div class="th"></div>
+            <div class="th">Tipo</div>
+            <div class="th">Lugar</div>
+            <div class="th">Reporter</div>
+            <div class="th">Urgencia</div>
+            <div class="th">Hace</div>
+            <div class="th" style="text-align:right">Acciones</div>
+          </div>
+          <div id="reports-list"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-bg" id="user-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title" id="um-title">—</div>
+      <button class="modal-close" onclick="closeModal('user-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="um-body"></div>
+    <div class="modal-actions" id="um-actions"></div>
+  </div>
+</div>
+
+<!-- REPORT DETAIL MODAL -->
+<div class="modal-bg" id="rep-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title" id="rm-title">—</div>
+      <button class="modal-close" onclick="closeModal('rep-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="rm-body"></div>
+    <div class="modal-actions" id="rm-actions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const ADMIN_PASSWORD = 'blitz2025';  // ← Cambia esta contraseña
+
+const SUPA_URL = 'https://sbiuelnwmleccxoywlyj.supabase.co';
+const SUPA_KEY = 'sb_publishable_nXNLnSJ50q9ovCAjO9M6rQ_g4YemIBE';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const CAT = {
+  sos:'🆘', medico:'🩺', agua:'💧', rescate:'🚒',
+  acopio:'📦', transporte:'🚗', equipo:'🔧',
+  voluntario:'🙋', donacion:'💊', wifi:'📶'
+};
+const CAT_LABEL = {
+  sos:'SOS', medico:'Médico', agua:'Agua', rescate:'Rescate',
+  acopio:'Acopio', transporte:'Transporte', equipo:'Equipo',
+  voluntario:'Voluntario', donacion:'Donaciones', wifi:'WiFi'
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let users = [];    // derived from reports (unique reporters)
+let reports = [];
+let userFlt = 'all', repFlt = 'all';
+let currentUserDetail = null, currentRepDetail = null;
+
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
+function tryLogin() {
+  const pwd = document.getElementById('pwd-input').value;
+  if (pwd === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('shell').classList.add('on');
+    init();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+    document.getElementById('pwd-input').value = '';
+    document.getElementById('pwd-input').focus();
+  }
+}
+function logout() {
+  document.getElementById('shell').classList.remove('on');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pwd-input').value = '';
+}
+document.getElementById('pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryLogin();
+});
+
+// ═══════════════════════════════════════════════════════
+// INIT + REALTIME
+// ═══════════════════════════════════════════════════════
+async function init() {
+  setSyncStatus('CONECTANDO…', '#f59e0b');
+  await loadAll();
+  setSyncStatus('EN VIVO', '#22c55e', true);
+
+  // Realtime
+  db.channel('admin-reports')
+    .on('postgres_changes', {event:'*', schema:'public', table:'reports'}, async () => {
+      await loadAll();
+    })
+    .on('postgres_changes', {event:'*', schema:'public', table:'profiles'}, async () => {
+      await loadAll();
+    })
+    .subscribe();
+}
+
+async function loadAll() {
+  const [repRes, profRes] = await Promise.all([
+    db.from('reports').select('*').order('created_at', {ascending:false}),
+    db.from('profiles').select('*').order('created_at', {ascending:false})
+  ]);
+
+  reports = repRes.data || [];
+
+  // Build user list from profiles + reports
+  const profileMap = {};
+  (profRes.data || []).forEach(p => { profileMap[p.name] = p; });
+
+  // Also include any reporter not in profiles yet
+  const names = [...new Set(reports.map(r=>r.reporter).filter(Boolean))];
+  names.forEach(name => {
+    if (!profileMap[name]) {
+      profileMap[name] = { name, status:'pending', created_at:null };
+    }
+  });
+
+  users = Object.values(profileMap);
+
+  // Enrich users with stats
+  users = users.map(u => ({
+    ...u,
+    reportCount: reports.filter(r=>r.reporter===u.name).length,
+    doneCount: reports.filter(r=>r.reporter===u.name&&r.atendido).length,
+    lastSeen: reports.filter(r=>r.reporter===u.name)[0]?.created_at || u.created_at,
+  })).sort((a,b) => new Date(b.lastSeen||0) - new Date(a.lastSeen||0));
+
+  updateStats();
+  renderUsers();
+  renderReports();
+}
+
+function updateStats() {
+  const active = reports.filter(r=>!r.atendido);
+  document.getElementById('st-users').textContent = users.length;
+  document.getElementById('st-verified').textContent = users.filter(u=>u.status==='verified').length;
+  document.getElementById('st-banned').textContent = users.filter(u=>u.status==='banned').length;
+  document.getElementById('st-reports').textContent = active.length;
+  document.getElementById('st-sos').textContent = active.filter(r=>r.cat==='sos').length;
+  document.getElementById('st-done').textContent = reports.filter(r=>r.atendido).length;
+
+  const urg = active.filter(r=>r.urgency==='urgent').length;
+  document.getElementById('tb-urgentes').textContent = urg + ' urgentes';
+
+  const pending = users.filter(u=>u.status==='pending').length;
+  const sc = document.getElementById('si-pending-count');
+  sc.textContent = pending; sc.classList.toggle('on', pending > 0);
+  document.getElementById('si-rep-count').textContent = active.length;
+}
+
+// ═══════════════════════════════════════════════════════
+// USERS
+// ═══════════════════════════════════════════════════════
+function setUserFlt(f) {
+  userFlt=f;
+  document.querySelectorAll('.fpill[data-f]').forEach(p=>p.classList.toggle('on',p.dataset.f===f));
+  renderUsers();
+}
+
+function renderUsers() {
+  const q = (document.getElementById('user-search')?.value||'').toLowerCase();
+  let list = users.filter(u => {
+    if (q && !u.name.toLowerCase().includes(q)) return false;
+    if (userFlt==='verified') return u.status==='verified';
+    if (userFlt==='banned')   return u.status==='banned';
+    if (userFlt==='pending')  return u.status==='pending'||!u.status;
+    return true;
+  });
+
+  document.getElementById('user-count-lbl').textContent = list.length + ' usuarios';
+
+  const el = document.getElementById('users-list');
+  if (!list.length) {
+    el.innerHTML=`<div class="empty-state"><div class="empty-emoji">👤</div><div class="empty-txt">Sin usuarios con este filtro</div></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(u => {
+    const status = u.status || 'pending';
+    const badgeCls = status==='verified'?'badge-verified':status==='banned'?'badge-banned':'badge-pending';
+    const badgeTxt = status==='verified'?'✅ Verificado':status==='banned'?'🚫 Baneado':'⏳ Pendiente';
+    const actions = status==='banned'
+      ? `<button class="act-btn btn-unban" onclick="updateUserStatus('${u.name}','pending')">↩ Desbanear</button>`
+      : `<button class="act-btn btn-verify" onclick="updateUserStatus('${u.name}','verified')">✅ Verificar</button>
+         <button class="act-btn btn-ban" onclick="confirmBan('${u.name}')">🚫 Banear</button>`;
+    return `<div class="user-row">
+      <div class="user-name">
+        ${u.name}
+        <span class="user-badge ${badgeCls}">${badgeTxt}</span>
+        ${status==='verified'?'<span style="font-size:12px">🛡</span>':''}
+      </div>
+      <div class="user-stat">${u.reportCount}</div>
+      <div class="user-stat">${u.doneCount}</div>
+      <div class="user-stat"><span class="user-badge ${badgeCls}" style="font-size:9px">${badgeTxt}</span></div>
+      <div class="user-time">${timeAgo(u.lastSeen)}</div>
+      <div class="user-actions">
+        <button class="act-btn btn-view" onclick="openUserDetail('${u.name}')">Ver perfil</button>
+        ${actions}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateUserStatus(name, status) {
+  // Upsert into profiles table
+  const { error } = await db.from('profiles').upsert({ name, status }, { onConflict:'name' });
+  if (error) { toast('❌ Error: '+error.message); return; }
+  toast(status==='verified'?`✅ ${name} verificado`:status==='banned'?`🚫 ${name} baneado`:`↩ ${name} desbaneado`);
+  await loadAll();
+  closeModal('user-modal');
+}
+
+function confirmBan(name) {
+  if (confirm(`¿Seguro que quieres banear a "${name}"?\n\nSus reportes existentes se mantendrán pero no podrá hacer nuevos.`)) {
+    updateUserStatus(name, 'banned');
+  }
+}
+
+function openUserDetail(name) {
+  const u = users.find(x=>x.name===name); if(!u) return;
+  const status = u.status||'pending';
+  const userReports = reports.filter(r=>r.reporter===name);
+
+  document.getElementById('um-title').textContent = `👤 ${u.name}`;
+  document.getElementById('um-body').innerHTML = `
+    <div class="modal-section">
+      <div class="modal-section-title">Información</div>
+      <div class="modal-row"><b>Nombre</b><span>${u.name}</span></div>
+      <div class="modal-row"><b>Estado</b><span>${status==='verified'?'✅ Verificado':status==='banned'?'🚫 Baneado':'⏳ Pendiente'}</span></div>
+      <div class="modal-row"><b>Reportes</b><span>${u.reportCount} totales · ${u.doneCount} atendidos</span></div>
+      <div class="modal-row"><b>Última actividad</b><span>${timeAgo(u.lastSeen)}</span></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Reportes de este usuario (${userReports.length})</div>
+      ${userReports.length ? userReports.slice(0,10).map(r=>`
+        <div class="mini-rep">
+          <div class="mini-rep-emoji">${CAT[r.cat]||'📍'}</div>
+          <div class="mini-rep-info">
+            <div class="mini-rep-loc">${r.loc||'Sin ubicación'}</div>
+            <div class="mini-rep-meta">${CAT_LABEL[r.cat]||r.cat} · ${r.urgency==='urgent'?'🔴 Urgente':r.urgency==='medium'?'🟡 Moderado':'Normal'} · hace ${timeAgo(r.created_at)} ${r.atendido?'· ✅ Atendido':''}</div>
+          </div>
+        </div>`).join('')
+      : '<div style="color:var(--faint);font-size:12px">Sin reportes</div>'}
+    </div>
+  `;
+
+  const actions = document.getElementById('um-actions');
+  if (status==='banned') {
+    actions.innerHTML=`<button class="modal-act amber" onclick="updateUserStatus('${name}','pending')">↩ Desbanear</button>`;
+  } else if (status==='verified') {
+    actions.innerHTML=`<button class="modal-act del" onclick="confirmBan('${name}')">🚫 Banear usuario</button>`;
+  } else {
+    actions.innerHTML=`
+      <button class="modal-act ok" onclick="updateUserStatus('${name}','verified')">✅ Verificar</button>
+      <button class="modal-act del" onclick="confirmBan('${name}')">🚫 Banear</button>
+    `;
+  }
+
+  document.getElementById('user-modal').classList.add('on');
+}
+
+// ═══════════════════════════════════════════════════════
+// REPORTS
+// ═══════════════════════════════════════════════════════
+function setRepFlt(f) {
+  repFlt=f;
+  document.querySelectorAll('.fpill[data-rf]').forEach(p=>p.classList.toggle('on',p.dataset.rf===f));
+  renderReports();
+}
+
+function renderReports() {
+  const q = (document.getElementById('rep-search')?.value||'').toLowerCase();
+  let list = reports.filter(r => {
+    if (q && !(r.loc+' '+r.descripcion+' '+r.reporter).toLowerCase().includes(q)) return false;
+    if (repFlt==='urgent') return r.urgency==='urgent' && !r.atendido;
+    if (repFlt==='sos')    return r.cat==='sos' && !r.atendido;
+    if (repFlt==='active') return !r.atendido;
+    if (repFlt==='done')   return r.atendido;
+    if (repFlt==='flagged') return r.flagged;
+    return true;
+  });
+
+  document.getElementById('rep-count-lbl').textContent = list.length + ' reportes';
+
+  const el = document.getElementById('reports-list');
+  if (!list.length) {
+    el.innerHTML=`<div class="empty-state"><div class="empty-emoji">📋</div><div class="empty-txt">Sin reportes con este filtro</div></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(r => {
+    const uc = r.urgency==='urgent'?'urg-red':r.urgency==='medium'?'urg-amb':'urg-dim';
+    const ut = r.urgency==='urgent'?'Urgente':r.urgency==='medium'?'Moderado':'Normal';
+    const user = users.find(u=>u.name===r.reporter);
+    const userBadge = user?.status==='verified'?'<span style="font-size:11px" title="Verificado">🛡</span>':user?.status==='banned'?'<span style="font-size:11px" title="Baneado">🚫</span>':'';
+    return `<div class="rep-row${r.atendido?' done':''}">
+      <div class="rep-cat">${CAT[r.cat]||'📍'}</div>
+      <div class="rep-type">${CAT_LABEL[r.cat]||r.cat}</div>
+      <div class="rep-loc" title="${r.loc||''}">${(r.loc||'Sin ubicación').slice(0,45)}${(r.loc||'').length>45?'…':''}</div>
+      <div class="rep-reporter">${r.reporter||'—'} ${userBadge}</div>
+      <div><span class="rep-urg ${uc}">${r.atendido?'✅ Atendido':ut}</span></div>
+      <div class="rep-time">${timeAgo(r.created_at)}</div>
+      <div class="rep-actions">
+        <button class="rbt" onclick="openRepDetail(${r.id})">Ver</button>
+        <button class="rbt" onclick="adminToggleDone(${r.id})">${r.atendido?'↩':'✅'}</button>
+        ${r.flagged?`<button class="rbt" onclick="adminUnflag(${r.id})" title="Quitar marca">⚑</button>`:`<button class="rbt" onclick="adminFlag(${r.id})" title="Marcar como sospechoso" style="color:var(--amber)">⚑</button>`}
+        <button class="rbt del" onclick="adminDeleteRep(${r.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openRepDetail(id) {
+  const r = reports.find(x=>x.id===id); if(!r) return;
+  const user = users.find(u=>u.name===r.reporter);
+  const uc = r.urgency==='urgent'?'#e63025':r.urgency==='medium'?'#f59e0b':'#444';
+  const ut = r.urgency==='urgent'?'🔴 Urgente':r.urgency==='medium'?'🟡 Moderado':'🟢 Normal';
+  document.getElementById('rm-title').innerHTML=`${CAT[r.cat]||'📍'} ${CAT_LABEL[r.cat]||r.cat}`;
+  document.getElementById('rm-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">Reporte</div>
+      <div class="modal-row"><b>Lugar</b><span>${r.loc||'—'}</span></div>
+      ${r.num?`<div class="modal-row"><b>Personas</b><span>${r.num}</span></div>`:''}
+      ${r.descripcion?`<div class="modal-row"><b>Situación</b><span>${r.descripcion}</span></div>`:''}
+      ${r.contact?`<div class="modal-row"><b>Contacto</b><span style="font-weight:700">${r.contact}</span></div>`:''}
+      <div class="modal-row"><b>Urgencia</b><span><span style="background:${uc};color:${uc==='#f59e0b'?'#000':'#fff'};padding:2px 8px;border-radius:2px;font-size:11px;font-weight:900;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px">${ut}</span></span></div>
+      <div class="modal-row"><b>Acceso</b><span>${r.access||'—'}</span></div>
+      <div class="modal-row"><b>Coords</b><span>${r.lat?`${Number(r.lat).toFixed(5)}, ${Number(r.lng).toFixed(5)}${r.gps_verified?' ✓ GPS':''}':'—'}</span></div>
+      <div class="modal-row"><b>Estado</b><span>${r.atendido?'✅ Atendido':'⚡ Activo'}</span></div>
+      <div class="modal-row"><b>Publicado</b><span>${timeAgo(r.created_at)}</span></div>
+      ${r.flagged?`<div class="modal-row"><b>⚑ Marcado</b><span style="color:var(--amber)">Este reporte fue marcado como sospechoso por un admin</span></div>`:''}
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Reportado por</div>
+      <div class="modal-row"><b>Nombre</b><span>${r.reporter||'—'} ${user?.status==='verified'?'🛡 Verificado':user?.status==='banned'?'🚫 Baneado':'⏳ Pendiente'}</span></div>
+      <div class="modal-row"><b>Reportes</b><span>${user?.reportCount||'—'} en total</span></div>
+    </div>
+  `;
+  document.getElementById('rm-actions').innerHTML=`
+    ${r.lat?`<button class="modal-act" style="color:var(--white);border-color:var(--border2)" onclick="window.open('https://maps.google.com/?q=${r.lat},${r.lng}','_blank')">🗺 Google Maps</button>`:''}
+    <button class="modal-act ${r.atendido?'amber':'ok'}" onclick="adminToggleDone(${r.id});closeModal('rep-modal')">${r.atendido?'↩ Reabrir':'✅ Marcar atendido'}</button>
+    ${r.flagged?`<button class="modal-act" style="color:var(--amber);border-color:var(--amber)" onclick="adminUnflag(${r.id});closeModal('rep-modal')">⚑ Quitar marca</button>`:`<button class="modal-act" style="color:var(--amber);border-color:var(--amber)" onclick="adminFlag(${r.id});closeModal('rep-modal')">⚑ Marcar sospechoso</button>`}
+    ${r.reporter&&users.find(u=>u.name===r.reporter)?`<button class="modal-act del" onclick="confirmBanFromRep('${r.reporter}')">🚫 Banear usuario</button>`:''}
+    <button class="modal-act del" onclick="adminDeleteRep(${r.id})">🗑 Eliminar reporte</button>
+  `;
+  document.getElementById('rep-modal').classList.add('on');
+}
+
+async function adminToggleDone(id) {
+  const r = reports.find(x=>x.id===id); if(!r) return;
+  await db.from('reports').update({atendido:!r.atendido}).eq('id',id);
+  toast(r.atendido?'↩ Reabierto':'✅ Marcado atendido');
+  await loadAll();
+}
+
+async function adminFlag(id) {
+  await db.from('reports').update({flagged:true}).eq('id',id);
+  toast('⚑ Marcado como sospechoso');
+  await loadAll();
+}
+async function adminUnflag(id) {
+  await db.from('reports').update({flagged:false}).eq('id',id);
+  toast('⚑ Marca eliminada');
+  await loadAll();
+}
+
+async function adminDeleteRep(id) {
+  if (!confirm('¿Eliminar este reporte definitivamente?')) return;
+  await db.from('reports').delete().eq('id',id);
+  closeModal('rep-modal');
+  toast('🗑 Reporte eliminado');
+  await loadAll();
+}
+
+function confirmBanFromRep(name) {
+  if (confirm(`¿Banear a "${name}"? Esto lo bloqueará en la app.`)) {
+    updateUserStatus(name,'banned');
+    closeModal('rep-modal');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PANELS / MODALS
+// ═══════════════════════════════════════════════════════
+function showPanel(p) {
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('on'));
+  document.getElementById('panel-'+p).classList.add('on');
+  document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('on'));
+  document.getElementById('si-'+p)?.classList.add('on');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('on'); }
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.classList.remove('on'); });
+});
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function setSyncStatus(txt, color, live=false) {
+  const dot=document.getElementById('sdot'), t=document.getElementById('stxt');
+  dot.style.background=color; dot.className='sdot'+(live?' on':'');
+  t.textContent=txt; t.style.color=color;
+}
+
+function timeAgo(ts) {
+  if(!ts) return '—';
+  const s=Math.floor((Date.now()-new Date(ts).getTime())/1000);
+  if(s<60) return s+'s'; if(s<3600) return Math.floor(s/60)+'min';
+  if(s<86400) return Math.floor(s/3600)+'h';
+  return Math.floor(s/86400)+'d';
+}
+
+let toastT=null;
+function toast(msg) {
+  const el=document.getElementById('toast-el'); el.textContent=msg; el.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('on'),2800);
+}
+
+// Keyboard shortcut: Escape closes modals
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal-bg.on').forEach(m=>m.classList.remove('on'));
+});
+</script>
+</body>
+</html>

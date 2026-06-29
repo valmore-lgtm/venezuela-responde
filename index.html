@@ -800,6 +800,13 @@ async function submitReport() {
     }
   }
 
+  // Check if user is banned
+  const { data: profile } = await db.from('profiles').select('status').eq('name', myName).single();
+  if (profile?.status === 'banned') {
+    toast('🚫 Tu cuenta ha sido suspendida. Contacta a Venezuela Responde.');
+    return;
+  }
+
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = 'ENVIANDO…';
 
